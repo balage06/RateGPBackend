@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import hu.balpo.rategp.backend.model.Event;
@@ -38,7 +38,7 @@ public class SeriesRestController {
 	}
 	
 	@GetMapping("/series/{seriesId}")
-	public Serie getSeriesById(@RequestParam long seriesId){
+	public Serie getSeriesById(@PathVariable long seriesId){
 		Optional<Serie> serie = serieRepository.findById(seriesId);
 		if(serie.isPresent()) {
 			return serie.get();
@@ -48,7 +48,7 @@ public class SeriesRestController {
 	}
 	
 	@GetMapping("/series/{seriesId}/{eventId}")
-	public Event getReviewsByEventId(@RequestParam long seriesId, @RequestParam long eventId) {
+	public Event getReviewsByEventId(@PathVariable long seriesId, @PathVariable long eventId) {
 		Optional<Event> event = eventRepository.findById(eventId);
 		if(event.isPresent()) {
 			return event.get();
@@ -57,14 +57,19 @@ public class SeriesRestController {
 		}
 	}
 	
-	@PostMapping("series/{seriesId}/{eventId}")
-	public void postReviewForEvent(@RequestParam long seriesId, @RequestParam long eventId, @RequestBody Review review) {
+	@PostMapping("/series/{seriesId}/{eventId}")
+	public void postReviewForEvent(@PathVariable("seriesId") long seriesId, @PathVariable("eventId") long eventId, @RequestBody Review review) {
 		Review reviewToSave = new Review();
+		
+		Optional<Event> event = eventRepository.findById(eventId);
 		
 		reviewToSave.setRating(review.getRating());
 		reviewToSave.setComment(review.getComment());
 		reviewToSave.setUsername(review.getUsername());
 		
-		reviewRepository.save(reviewToSave);
+		Review savedReview = reviewRepository.save(reviewToSave);
+		
+		event.get().addRating(savedReview);
+		eventRepository.save(event.get());
 	}
 }
